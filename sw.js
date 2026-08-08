@@ -1,4 +1,7 @@
-const CACHE_NAME = 'compt-heures-v1';
+/* Stratégie : réseau en priorité, cache seulement en repli hors-ligne.
+   Ainsi chaque nouveau déploiement est pris en compte immédiatement dès
+   que le téléphone est en ligne, sans jamais servir une version périmée. */
+const CACHE_NAME = 'compt-heures-v2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -28,15 +31,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if(event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request).then((resp) => {
-        if(resp && resp.status === 200 && resp.type === 'basic'){
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return resp;
-      }).catch(() => cached);
-      return cached || network;
-    })
+    fetch(event.request).then((resp) => {
+      if(resp && resp.status === 200){
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(()=>{});
+      }
+      return resp;
+    }).catch(() => caches.match(event.request))
   );
 });

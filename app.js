@@ -467,7 +467,10 @@ function init(){
   render();
 
   if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+      // Vérifie s'il existe une nouvelle version à chaque (ré)ouverture de l'appli.
+      reg.update().catch(()=>{});
+    }).catch(()=>{});
   }
 }
 init();
