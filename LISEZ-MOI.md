@@ -13,6 +13,18 @@ Une PWA doit être servie via une **adresse http(s)** pour pouvoir s'installer p
 4. Ouvrez l'adresse fournie (`https://votre-compte.github.io/votre-depot/`) avec Chrome sur votre téléphone.
 5. Menu Chrome (⋮) → **Installer l'application** (ou « Ajouter à l'écran d'accueil »).
 
+Si le menu installer l'application n'apparaît plus dans Chrome :
+
+La raison peut être la désynchronisation du lanceur Android (Launcher).
+Après une mise à jour d'Android ou de Chrome, le navigateur peut perdre le lien avec l'application d'accueil du téléphone. Pour corriger ce problème :
+Ouvrez les Paramètres de votre téléphone.  
+Allez dans Applications > Applications par défaut > Application d'accueil (ou Ecran d'accueil / Launcher).  
+Sélectionnez à nouveau votre lanceur actuel (ex. One UI, Pixel Launcher, Nova Launcher) pour forcer la réinitialisation du lien.
+Redémarrez Chrome.
+
+
+
+
 **Option B — Netlify Drop**
 1. Allez sur `app.netlify.com/drop` depuis un ordinateur.
 2. Glissez-déposez le dossier entier de l'application.
