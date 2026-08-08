@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mon compt'heures</title>
+<meta name="description" content="Suivi de vos heures de travail cumulées, mois par mois.">
+<meta id="theme-color-meta" name="theme-color" content="#EEF0E7">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Compt'heures">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="brand"><small>compteur horaire</small></div>
+      <button id="open-settings" class="icon-btn" aria-label="Réglages" title="Réglages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+
+    <div class="period-row">
+      <button id="prev-month" class="period-nav" aria-label="Mois précédent">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="period-picker">
+        <select id="month-select" aria-label="Mois"></select>
+        <input id="year-input" type="number" inputmode="numeric" aria-label="Année" value="2026">
+      </div>
+      <button id="next-month" class="period-nav" aria-label="Mois suivant">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+
+    <div class="meter">
+      <div>
+        <div class="meter-label" id="period-label">—</div>
+        <div class="meter-window" id="meter-window"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="day-list" id="day-list"></main>
+
+</div>
+
+<!-- ---------------- panneau de réglages ---------------- -->
+<div class="overlay" id="settings-overlay">
+  <div class="sheet" role="dialog" aria-label="Réglages">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" id="close-settings" aria-label="Fermer">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <h2>Réglages</h2>
+
+    <h3>Apparence</h3>
+    <div class="seg seg-theme">
+      <button data-v="light">Clair</button>
+      <button data-v="dark">Sombre</button>
+      <button data-v="auto">Auto</button>
+    </div>
+
+    <h3>Couleur d'accent</h3>
+    <div class="swatches">
+      <button class="swatch" data-a="laiton" aria-label="Laiton"><span></span></button>
+      <button class="swatch" data-a="marine" aria-label="Bleu marine"><span></span></button>
+      <button class="swatch" data-a="bouteille" aria-label="Vert bouteille"><span></span></button>
+      <button class="swatch" data-a="bordeaux" aria-label="Bordeaux"><span></span></button>
+    </div>
+
+    <h3>Saisie des heures</h3>
+    <div class="seg seg-format">
+      <button data-v="decimal">Décimal (7,5)</button>
+      <button data-v="hm">Heures:min (7h30)</button>
+    </div>
+
+    <h3>Sauvegarde</h3>
+    <button class="action-btn" id="export-month">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      Exporter le mois affiché (CSV)
+    </button>
+    <button class="action-btn" id="export-all">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      Exporter toutes les données (CSV)
+    </button>
+    <button class="action-btn" id="import-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21V9m0 0l-4 4m4-4l4 4"/><path d="M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/></svg>
+      Importer un fichier CSV
+    </button>
+    <input type="file" id="import-file" accept=".csv,text/csv">
+    <p class="hint">L'import fusionne les données du fichier avec celles déjà enregistrées : les jours présents dans le fichier remplacent les jours correspondants déjà saisis.</p>
+
+    <h3>Données</h3>
+    <button class="action-btn danger" id="reset-data">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 7h16M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m2 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V7"/></svg>
+      Réinitialiser toutes les données
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="./app.js"></script>
+</body>
+</html>
