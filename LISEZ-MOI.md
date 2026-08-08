@@ -4,12 +4,17 @@ Application web installable (PWA) pour suivre vos heures de travail cumulées, m
 
 ## Mise à jour importante — si vous aviez déjà installé une version précédente
 
-Une version antérieure gardait la page en cache **avant** de vérifier le réseau, ce qui empêchait les mises à jour de s'afficher (fond inchangé, boutons de thèmes/PDF sans effet). C'est corrigé : l'appli vérifie maintenant toujours le réseau en premier et ne se rabat sur le cache que si le téléphone est hors-ligne. Les mises à jour futures s'appliqueront **silencieusement**, dès la prochaine ouverture avec une connexion internet.
+Deux problèmes distincts ont été corrigés dans cette version :
 
-**Cette fois seulement**, si l'icône est déjà installée sur votre écran d'accueil, il faut purger une fois l'ancienne version restée bloquée :
+1. **Page blanche / non fonctionnelle (V3)** : une erreur dans `app.js` (une variable utilisée avant sa déclaration) arrêtait tout le script dès son démarrage — d'où l'absence totale de liste, de sélecteur de mois et de réglages. C'était une véritable erreur de code de ma part, corrigée et vérifiée en exécutant le script de bout en bout avant de vous le renvoyer.
+2. **Mises à jour qui ne s'affichaient pas (V2)** : voir ci-dessous, déjà corrigé précédemment.
+
+Une version antérieure gardait la page en cache **avant** de vérifier le réseau, ce qui empêchait les mises à jour de s'afficher. C'est corrigé : l'appli vérifie maintenant toujours le réseau en premier et ne se rabat sur le cache que si le téléphone est hors-ligne. Les mises à jour futures s'appliqueront **silencieusement**, dès la prochaine ouverture avec une connexion internet.
+
+**Cette fois encore**, si l'icône est déjà installée sur votre écran d'accueil, purgez une fois la version bloquée :
 1. Réglages Android → Applications → *Mon compt'heures* (elle apparaît comme une application à part, même si c'est une PWA).
 2. Stockage → **Effacer le cache** puis **Effacer les données**.
-3. Redéployez les fichiers mis à jour sur GitHub, puis rouvrez l'icône : la nouvelle version doit s'afficher normalement.
+3. Redéployez ces fichiers sur GitHub, puis rouvrez l'icône : la nouvelle version doit s'afficher normalement.
 
 Si l'appli n'apparaît pas dans la liste des applications (installation via un simple raccourci Chrome plutôt qu'un « WebAPK »), ouvrez plutôt le site dans l'onglet Chrome normal, puis Menu (⋮) → Paramètres → Paramètres des sites → *Effacer et réinitialiser* pour ce site.
 

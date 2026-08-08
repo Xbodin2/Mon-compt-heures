@@ -12,6 +12,8 @@ const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août'
 const $ = (sel, el=document) => el.querySelector(sel);
 const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
 
+const DEFAULT_SETTINGS = { theme:'auto', hourFormat:'decimal', weeklyGoal: null };
+
 /* ---------------------------- état ---------------------------- */
 const today = new Date();
 let state = {
@@ -22,7 +24,6 @@ let state = {
 let settings = loadSettings();
 let data = loadData();
 
-const DEFAULT_SETTINGS = { theme:'auto', hourFormat:'decimal', weeklyGoal: null };
 function loadSettings(){
   try{
     const raw = localStorage.getItem('ch_settings');
