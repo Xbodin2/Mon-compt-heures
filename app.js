@@ -1,7 +1,8 @@
 /* =====================================================================
    Mon compt'heures — logique de l'application
    Stockage local (localStorage) :
-     ch_settings -> { theme, accent, hourFormat }
+     ch_settings -> { theme, hourFormat, weeklyGoal }
+       theme: 'auto' | 'carnet-clair' | 'carnet-sombre' | 'atelier' | 'grille'
      ch_data     -> { "YYYY-MM": { "1": {h: 7.5, c: "commentaire"}, ... } }
    ===================================================================== */
 
@@ -21,12 +22,19 @@ let state = {
 let settings = loadSettings();
 let data = loadData();
 
+const DEFAULT_SETTINGS = { theme:'auto', hourFormat:'decimal', weeklyGoal: null };
 function loadSettings(){
   try{
     const raw = localStorage.getItem('ch_settings');
-    if(raw) return { theme:'auto', accent:'laiton', hourFormat:'decimal', ...JSON.parse(raw) };
+    if(raw){
+      const parsed = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      // migration : les anciennes valeurs 'light'/'dark' correspondent aux thèmes carnet
+      if(parsed.theme === 'light') parsed.theme = 'carnet-clair';
+      if(parsed.theme === 'dark') parsed.theme = 'carnet-sombre';
+      return parsed;
+    }
   }catch(e){}
-  return { theme:'auto', accent:'laiton', hourFormat:'decimal' };
+  return { ...DEFAULT_SETTINGS };
 }
 function saveSettings(){
   localStorage.setItem('ch_settings', JSON.stringify(settings));
@@ -44,15 +52,16 @@ function saveData(){
 
 function monthKey(y,m){ return `${y}-${String(m+1).padStart(2,'0')}`; }
 
-/* ------------------------- thème / accent ------------------------- */
+/* ------------------------- thème ------------------------- */
+function resolveThemeName(){
+  if(settings.theme === 'auto'){
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'carnet-sombre' : 'carnet-clair';
+  }
+  return settings.theme;
+}
 function applyTheme(){
   const root = document.documentElement;
-  let effective = settings.theme;
-  if(effective === 'auto'){
-    effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  root.setAttribute('data-theme', effective);
-  root.setAttribute('data-accent', settings.accent);
+  root.setAttribute('data-theme-name', resolveThemeName());
   const meta = $('#theme-color-meta');
   if(meta){
     const cs = getComputedStyle(root);
@@ -152,6 +161,38 @@ function render(){
 
   $('#meter-window').innerHTML = renderMeterDigits(formatTotal(total));
   $('#period-label').textContent = `${MOIS[state.month]} ${state.year}`;
+  updateGoalLine(total, nbJours);
+}
+
+function computeMonthTotal(key){
+  const monthData = data[key] || {};
+  let total = 0;
+  Object.values(monthData).forEach(en => { if(typeof en.h === 'number') total += en.h; });
+  return total;
+}
+
+/* ------------------------- objectif hebdomadaire ------------------------- */
+function updateGoalLine(total, nbJours){
+  const el = $('#goal-line');
+  const goal = settings.weeklyGoal;
+  if(!goal || goal <= 0){
+    el.classList.remove('visible');
+    el.innerHTML = '';
+    return;
+  }
+  const monthlyGoal = goal / 7 * nbJours;
+  const diff = total - monthlyGoal;
+  let msg;
+  if(Math.abs(diff) < 0.01){
+    msg = `Objectif atteint : <strong>${formatTotal(monthlyGoal)}</strong> ce mois (${formatTotal(goal)}/sem.)`;
+  } else if(diff < 0){
+    msg = `Objectif \u2248<strong>${formatTotal(monthlyGoal)}</strong> ce mois (${formatTotal(goal)}/sem.) \u00b7 reste <strong class="delta">${formatTotal(Math.abs(diff))}</strong>`;
+  } else {
+    msg = `Objectif \u2248<strong>${formatTotal(monthlyGoal)}</strong> ce mois (${formatTotal(goal)}/sem.) \u00b7 d\u00e9pass\u00e9 de <strong class="delta">${formatTotal(diff)}</strong>`;
+  }
+  el.innerHTML = msg;
+  el.classList.add('visible');
+  el.classList.toggle('over', diff >= 0);
 }
 
 function escapeAttr(s){
@@ -183,10 +224,9 @@ document.addEventListener('input', (e) => {
     setEntry(day, field, t.value);
     if(field === 'h'){
       const key = monthKey(state.year, state.month);
-      const monthData = data[key] || {};
-      let total = 0;
-      Object.values(monthData).forEach(en => { if(typeof en.h === 'number') total += en.h; });
+      const total = computeMonthTotal(key);
       $('#meter-window').innerHTML = renderMeterDigits(formatTotal(total));
+      updateGoalLine(total, daysInMonth(state.year, state.month));
     }
   }
 });
@@ -222,19 +262,23 @@ function openSheet(){ overlay.classList.add('open'); syncSettingsUI(); }
 function closeSheet(){ overlay.classList.remove('open'); }
 
 function syncSettingsUI(){
-  $$('.seg-theme button').forEach(b => b.classList.toggle('active', b.dataset.v === settings.theme));
+  $$('.theme-option').forEach(b => b.classList.toggle('active', b.dataset.theme === settings.theme));
   $$('.seg-format button').forEach(b => b.classList.toggle('active', b.dataset.v === settings.hourFormat));
-  $$('.swatch').forEach(s => s.classList.toggle('active', s.dataset.a === settings.accent));
+  $('#weekly-goal').value = settings.weeklyGoal != null ? settings.weeklyGoal : '';
 }
-$$('.seg-theme button').forEach(b => b.addEventListener('click', () => {
-  settings.theme = b.dataset.v; saveSettings(); applyTheme(); syncSettingsUI();
+$$('.theme-option').forEach(b => b.addEventListener('click', () => {
+  settings.theme = b.dataset.theme; saveSettings(); applyTheme(); syncSettingsUI();
 }));
 $$('.seg-format button').forEach(b => b.addEventListener('click', () => {
   settings.hourFormat = b.dataset.v; saveSettings(); syncSettingsUI(); render();
 }));
-$$('.swatch').forEach(s => s.addEventListener('click', () => {
-  settings.accent = s.dataset.a; saveSettings(); applyTheme(); syncSettingsUI();
-}));
+$('#weekly-goal').addEventListener('input', (e) => {
+  const v = parseFloat(String(e.target.value).replace(',', '.'));
+  settings.weeklyGoal = isNaN(v) || v <= 0 ? null : v;
+  saveSettings();
+  const key = monthKey(state.year, state.month);
+  updateGoalLine(computeMonthTotal(key), daysInMonth(state.year, state.month));
+});
 
 /* ------------------------------ export CSV ------------------------------ */
 function csvEscape(v){
@@ -270,6 +314,64 @@ $('#export-month').addEventListener('click', () => {
   downloadCsv(`compt-heures_${key}.csv`, buildCsv([key]));
   showToast('Export du mois effectué.');
 });
+/* ------------------------------ export PDF ------------------------------ */
+$('#export-pdf').addEventListener('click', () => {
+  const key = monthKey(state.year, state.month);
+  const monthData = data[key] || {};
+  const nbJours = daysInMonth(state.year, state.month);
+  if(Object.keys(monthData).length === 0){ showToast('Aucune donnée à exporter pour ce mois.'); return; }
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    showToast("L'export PDF nécessite une connexion internet (chargement du module la première fois).");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const title = `Mon compt'heures — ${MOIS[state.month]} ${state.year}`;
+
+  doc.setFontSize(16);
+  doc.text(title, 14, 18);
+  doc.setFontSize(10);
+  doc.setTextColor(110);
+  doc.text('Récapitulatif mensuel des heures travaillées', 14, 24);
+  doc.setTextColor(0);
+
+  const body = [];
+  let total = 0;
+  for(let d=1; d<=nbJours; d++){
+    const entry = monthData[d];
+    const dow = new Date(state.year, state.month, d).getDay();
+    if(entry && (entry.h != null || entry.c)){
+      if(typeof entry.h === 'number') total += entry.h;
+      body.push([
+        JOURS[dow],
+        String(d),
+        entry.h != null ? formatHoursForInput(entry.h) : '',
+        entry.c || ''
+      ]);
+    }
+  }
+
+  doc.autoTable({
+    startY: 30,
+    head: [['Jour', 'Date', 'Heures', 'Commentaire']],
+    body,
+    styles: { fontSize: 10, cellPadding: 2.4 },
+    headStyles: { fillColor: [40, 48, 46], textColor: 255 },
+    columnStyles: { 0:{cellWidth:22}, 1:{cellWidth:16}, 2:{cellWidth:22} },
+    theme: 'grid',
+  });
+
+  const finalY = doc.lastAutoTable.finalY || 30;
+  doc.setFontSize(12);
+  doc.setFont(undefined, 'bold');
+  doc.text(`Total du mois : ${formatTotal(total)}`, 14, finalY + 10);
+  doc.setFont(undefined, 'normal');
+
+  doc.save(`compt-heures_${key}.pdf`);
+  showToast('PDF généré.');
+});
+
 $('#export-all').addEventListener('click', () => {
   const keys = Object.keys(data);
   if(keys.length === 0){ showToast('Aucune donnée enregistrée.'); return; }

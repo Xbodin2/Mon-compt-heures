@@ -15,8 +15,10 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./style.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -49,6 +51,7 @@
         <div class="meter-window" id="meter-window"></div>
       </div>
     </div>
+    <p class="goal-line" id="goal-line"></p>
   </header>
 
   <main class="day-list" id="day-list"></main>
@@ -64,19 +67,28 @@
     </button>
     <h2>Réglages</h2>
 
-    <h3>Apparence</h3>
-    <div class="seg seg-theme">
-      <button data-v="light">Clair</button>
-      <button data-v="dark">Sombre</button>
-      <button data-v="auto">Auto</button>
-    </div>
-
-    <h3>Couleur d'accent</h3>
-    <div class="swatches">
-      <button class="swatch" data-a="laiton" aria-label="Laiton"><span></span></button>
-      <button class="swatch" data-a="marine" aria-label="Bleu marine"><span></span></button>
-      <button class="swatch" data-a="bouteille" aria-label="Vert bouteille"><span></span></button>
-      <button class="swatch" data-a="bordeaux" aria-label="Bordeaux"><span></span></button>
+    <h3>Thème</h3>
+    <div class="theme-list">
+      <button class="theme-option" data-theme="auto">
+        <span class="theme-swatch carnet-clair" style="border-radius:50%"></span>
+        <span class="theme-name">Auto<br><span style="font-weight:400;color:var(--ink-soft)">suit le tél.</span></span>
+      </button>
+      <button class="theme-option" data-theme="carnet-clair">
+        <span class="theme-swatch carnet-clair"></span>
+        <span class="theme-name">Carnet<br><span style="font-weight:400;color:var(--ink-soft)">clair</span></span>
+      </button>
+      <button class="theme-option" data-theme="carnet-sombre">
+        <span class="theme-swatch carnet-sombre"></span>
+        <span class="theme-name">Carnet<br><span style="font-weight:400;color:var(--ink-soft)">sombre</span></span>
+      </button>
+      <button class="theme-option" data-theme="atelier">
+        <span class="theme-swatch atelier"></span>
+        <span class="theme-name">Atelier<br><span style="font-weight:400;color:var(--ink-soft)">sombre, ambre</span></span>
+      </button>
+      <button class="theme-option" data-theme="grille">
+        <span class="theme-swatch grille"></span>
+        <span class="theme-name">Papier<br>quadrillé</span>
+      </button>
     </div>
 
     <h3>Saisie des heures</h3>
@@ -84,6 +96,14 @@
       <button data-v="decimal">Décimal (7,5)</button>
       <button data-v="hm">Heures:min (7h30)</button>
     </div>
+
+    <h3>Objectif hebdomadaire</h3>
+    <div class="field-row">
+      <label for="weekly-goal">Heures par semaine</label>
+      <input id="weekly-goal" type="number" inputmode="decimal" min="0" max="168" step="0.5" placeholder="—">
+      <span class="unit">h</span>
+    </div>
+    <p class="hint">Laissez vide pour ne rien afficher. L'objectif du mois est calculé au prorata du nombre de jours du mois affiché.</p>
 
     <h3>Sauvegarde</h3>
     <button class="action-btn" id="export-month">
@@ -100,6 +120,10 @@
     </button>
     <input type="file" id="import-file" accept=".csv,text/csv">
     <p class="hint">L'import fusionne les données du fichier avec celles déjà enregistrées : les jours présents dans le fichier remplacent les jours correspondants déjà saisis.</p>
+    <button class="action-btn" id="export-pdf">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
+      Exporter le mois affiché en PDF
+    </button>
 
     <h3>Données</h3>
     <button class="action-btn danger" id="reset-data">
