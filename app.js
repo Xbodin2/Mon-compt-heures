@@ -1,9 +1,12 @@
 /* =====================================================================
    Mon compt'heures — logique de l'application
    Stockage local (localStorage) :
-     ch_settings -> { theme, hourFormat, weeklyGoal }
+     ch_settings -> { theme, inputMode, hourFormat, weeklyGoal }
        theme: 'auto' | 'carnet-clair' | 'carnet-sombre' | 'atelier' | 'grille'
-     ch_data     -> { "YYYY-MM": { "1": {h: 7.5, c: "commentaire"}, ... } }
+       inputMode: 'direct' (nombre d'heures) | 'shift' (début - fin)
+     ch_data -> { "YYYY-MM": { "1": {h, c, start, end, pause}, ... } }
+       h: heures décimales (toujours recalculées automatiquement en mode 'shift')
+       start/end: "HH:MM" (mode 'shift'), pause: minutes (mode 'shift')
    ===================================================================== */
 
 const JOURS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
@@ -12,7 +15,7 @@ const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août'
 const $ = (sel, el=document) => el.querySelector(sel);
 const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
 
-const DEFAULT_SETTINGS = { theme:'auto', hourFormat:'decimal', weeklyGoal: null };
+const DEFAULT_SETTINGS = { theme:'auto', inputMode:'direct', hourFormat:'decimal', weeklyGoal: null };
 
 /* ---------------------------- état ---------------------------- */
 const today = new Date();
@@ -117,6 +120,34 @@ function renderMeterDigits(str){
   }).join('');
 }
 
+/* ---- conversions pour les champs horaires natifs (input type="time") ---- */
+function decimalToHHMM(h){
+  if(h == null || isNaN(h)) return '';
+  const total = Math.max(0, Math.min(23*60+59, Math.round(h*60)));
+  return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+}
+function parseHHMM(str){
+  const m = String(str||'').match(/^(\d{1,2}):(\d{2})$/);
+  if(!m) return null;
+  return parseInt(m[1],10) + parseInt(m[2],10)/60;
+}
+function timeStrToMinutes(str){
+  const m = String(str||'').match(/^(\d{1,2}):(\d{2})$/);
+  if(!m) return null;
+  return parseInt(m[1],10)*60 + parseInt(m[2],10);
+}
+function clampHours(v){ return Math.max(0, Math.min(24, v)); }
+// Durée = fin − début − pause. Si fin < début, on bascule sur le jour suivant (équipe de nuit).
+function computeShiftHours(startStr, endStr, pauseMin){
+  const startMin = timeStrToMinutes(startStr);
+  let endMin = timeStrToMinutes(endStr);
+  if(startMin == null || endMin == null) return null;
+  if(endMin < startMin) endMin += 24*60;
+  let total = endMin - startMin - (pauseMin || 0);
+  if(total < 0) total = 0;
+  return clampHours(total/60);
+}
+
 /* ------------------------------ rendu ------------------------------ */
 function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
 
@@ -150,12 +181,7 @@ function render(){
         <div class="day-name">${JOURS[dow]}</div>
         <div class="day-num">${d}</div>
       </div>
-      <div class="day-fields">
-        <input class="hours-input" type="text" inputmode="decimal" placeholder="${settings.hourFormat==='hm' ? '0h00' : '0'}" data-day="${d}" data-field="h" value="${entry.h!=null ? formatHoursForInput(entry.h) : ''}">
-        <div class="comment-wrap">
-          <input class="comment-input" type="text" placeholder="Commentaire (optionnel)" data-day="${d}" data-field="c" value="${entry.c ? escapeAttr(entry.c) : ''}">
-        </div>
-      </div>
+      ${dayFieldsHtml(d, entry)}
     `;
     list.appendChild(row);
   }
@@ -163,6 +189,40 @@ function render(){
   $('#meter-window').innerHTML = renderMeterDigits(formatTotal(total));
   $('#period-label').textContent = `${MOIS[state.month]} ${state.year}`;
   updateGoalLine(total, nbJours);
+}
+
+function dayFieldsHtml(d, entry){
+  if(settings.inputMode === 'shift'){
+    return `
+      <div class="day-fields shift-fields">
+        <div class="shift-row">
+          <input type="time" class="time-input" data-day="${d}" data-field="start" value="${entry.start || ''}">
+          <span class="shift-arrow">→</span>
+          <input type="time" class="time-input" data-day="${d}" data-field="end" value="${entry.end || ''}">
+          <span class="pause-group">
+            <input type="number" class="pause-input" inputmode="numeric" min="0" max="600" step="5" placeholder="0" data-day="${d}" data-field="pause" value="${entry.pause || ''}">
+            <span class="pause-unit">min pause</span>
+          </span>
+          <span class="shift-duration" data-day-total="${d}">${entry.h != null ? formatHoursForInput(entry.h) : '—'}</span>
+        </div>
+        <div class="comment-wrap">
+          <input class="comment-input" type="text" placeholder="Commentaire (optionnel)" data-day="${d}" data-field="c" value="${entry.c ? escapeAttr(entry.c) : ''}">
+        </div>
+      </div>
+    `;
+  }
+  const isTimeWidget = settings.hourFormat === 'hm';
+  const hoursField = isTimeWidget
+    ? `<input class="hours-input time-input" type="time" data-day="${d}" data-field="h" value="${entry.h != null ? decimalToHHMM(entry.h) : ''}">`
+    : `<input class="hours-input" type="text" inputmode="decimal" placeholder="0" data-day="${d}" data-field="h" value="${entry.h != null ? formatHoursForInput(entry.h) : ''}">`;
+  return `
+    <div class="day-fields">
+      ${hoursField}
+      <div class="comment-wrap">
+        <input class="comment-input" type="text" placeholder="Commentaire (optionnel)" data-day="${d}" data-field="c" value="${entry.c ? escapeAttr(entry.c) : ''}">
+      </div>
+    </div>
+  `;
 }
 
 function computeMonthTotal(key){
@@ -205,35 +265,56 @@ function setEntry(day, field, value){
   const key = monthKey(state.year, state.month);
   if(!data[key]) data[key] = {};
   if(!data[key][day]) data[key][day] = {};
+  const entry = data[key][day];
+
   if(field === 'h'){
-    const parsed = parseHoursInput(value);
-    if(parsed == null) delete data[key][day].h;
-    else data[key][day].h = Math.max(0, Math.min(24, parsed));
+    const parsed = settings.hourFormat === 'hm' ? parseHHMM(value) : parseHoursInput(value);
+    if(parsed == null) delete entry.h;
+    else entry.h = clampHours(parsed);
   } else if(field === 'c'){
-    if(!value) delete data[key][day].c;
-    else data[key][day].c = value;
+    if(!value) delete entry.c;
+    else entry.c = value;
+  } else if(field === 'start' || field === 'end'){
+    if(!value) delete entry[field];
+    else entry[field] = value;
+    recomputeShift(entry);
+  } else if(field === 'pause'){
+    const m = parseInt(value, 10);
+    if(!value || isNaN(m) || m <= 0) delete entry.pause;
+    else entry.pause = Math.max(0, Math.min(600, m));
+    recomputeShift(entry);
   }
+
   if(Object.keys(data[key][day]).length === 0) delete data[key][day];
   if(Object.keys(data[key]).length === 0) delete data[key];
   saveData();
 }
+function recomputeShift(entry){
+  const h = computeShiftHours(entry.start, entry.end, entry.pause);
+  if(h == null) delete entry.h; else entry.h = h;
+}
 
 document.addEventListener('input', (e) => {
   const t = e.target;
-  if(t.matches('.hours-input, .comment-input')){
+  if(t.matches('.hours-input, .comment-input, .time-input, .pause-input')){
     const day = t.dataset.day, field = t.dataset.field;
     setEntry(day, field, t.value);
-    if(field === 'h'){
+    if(field === 'h' || field === 'start' || field === 'end' || field === 'pause'){
       const key = monthKey(state.year, state.month);
       const total = computeMonthTotal(key);
       $('#meter-window').innerHTML = renderMeterDigits(formatTotal(total));
       updateGoalLine(total, daysInMonth(state.year, state.month));
+      if(field !== 'h'){
+        const entry = (data[key] && data[key][day]) || {};
+        const badge = document.querySelector(`.shift-duration[data-day-total="${day}"]`);
+        if(badge) badge.textContent = entry.h != null ? formatHoursForInput(entry.h) : '—';
+      }
     }
   }
 });
 document.addEventListener('blur', (e) => {
   const t = e.target;
-  if(t.matches('.hours-input')){
+  if(t.matches('.hours-input') && t.type === 'text'){
     const key = monthKey(state.year, state.month);
     const entry = (data[key] && data[key][t.dataset.day]) || {};
     t.value = entry.h != null ? formatHoursForInput(entry.h) : '';
@@ -264,11 +345,15 @@ function closeSheet(){ overlay.classList.remove('open'); }
 
 function syncSettingsUI(){
   $$('.theme-option').forEach(b => b.classList.toggle('active', b.dataset.theme === settings.theme));
+  $$('.seg-inputmode button').forEach(b => b.classList.toggle('active', b.dataset.v === settings.inputMode));
   $$('.seg-format button').forEach(b => b.classList.toggle('active', b.dataset.v === settings.hourFormat));
   $('#weekly-goal').value = settings.weeklyGoal != null ? settings.weeklyGoal : '';
 }
 $$('.theme-option').forEach(b => b.addEventListener('click', () => {
   settings.theme = b.dataset.theme; saveSettings(); applyTheme(); syncSettingsUI();
+}));
+$$('.seg-inputmode button').forEach(b => b.addEventListener('click', () => {
+  settings.inputMode = b.dataset.v; saveSettings(); syncSettingsUI(); render();
 }));
 $$('.seg-format button').forEach(b => b.addEventListener('click', () => {
   settings.hourFormat = b.dataset.v; saveSettings(); syncSettingsUI(); render();

@@ -330,6 +330,55 @@ input, select{ font-family: inherit; }
 }
 .comment-input::placeholder{ color: var(--ink-faint); }
 
+/* ---- mode de saisie « Début - fin » ---- */
+.day-fields.shift-fields{ flex-direction:column; align-items:stretch; gap:6px; }
+.shift-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.time-input{
+  font-family: var(--font-mono);
+  font-size: 15.5px;
+  font-weight:600;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-s);
+  padding: 7px 4px;
+  min-width: 0;
+  color-scheme: light dark;
+}
+.time-input:focus{
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.shift-arrow{ color: var(--ink-faint); font-size:14px; flex:0 0 auto; }
+.pause-group{ display:flex; align-items:center; gap:4px; flex:0 0 auto; }
+.pause-input{
+  width: 44px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-align:center;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-s);
+  padding: 7px 2px;
+}
+.pause-input:focus{
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.pause-unit{ font-size: 10.5px; color: var(--ink-soft); white-space:nowrap; }
+.shift-duration{
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight:700;
+  font-size: 15px;
+  color: var(--accent-2);
+  white-space:nowrap;
+  padding-left: 4px;
+}
+
 .day-total{
   font-family: var(--font-mono);
   font-size: 13px;
