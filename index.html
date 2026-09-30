@@ -113,24 +113,40 @@
     <p class="hint">Laissez vide pour ne rien afficher. L'objectif du mois est calculé au prorata du nombre de jours du mois affiché.</p>
 
     <h3>Sauvegarde</h3>
-    <button class="action-btn" id="export-month">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-      Exporter le mois affiché (CSV)
-    </button>
-    <button class="action-btn" id="export-all">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-      Exporter toutes les données (CSV)
-    </button>
+    <div class="export-row">
+      <span class="export-label">Mois affiché — CSV</span>
+      <button class="icon-action" id="export-month" title="Télécharger" aria-label="Télécharger le CSV du mois affiché">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      </button>
+      <button class="icon-action" id="share-month-csv" title="Partager" aria-label="Partager le CSV du mois affiché">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.2M8.3 13.3l7.4 4.2"/></svg>
+      </button>
+    </div>
+    <div class="export-row">
+      <span class="export-label">Toutes les données — CSV</span>
+      <button class="icon-action" id="export-all" title="Télécharger" aria-label="Télécharger toutes les données en CSV">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      </button>
+      <button class="icon-action" id="share-all-csv" title="Partager" aria-label="Partager toutes les données en CSV">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.2M8.3 13.3l7.4 4.2"/></svg>
+      </button>
+    </div>
     <button class="action-btn" id="import-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21V9m0 0l-4 4m4-4l4 4"/><path d="M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/></svg>
       Importer un fichier CSV
     </button>
     <input type="file" id="import-file" accept=".csv,text/csv">
     <p class="hint">L'import fusionne les données du fichier avec celles déjà enregistrées : les jours présents dans le fichier remplacent les jours correspondants déjà saisis.</p>
-    <button class="action-btn" id="export-pdf">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
-      Exporter le mois affiché en PDF
-    </button>
+    <div class="export-row">
+      <span class="export-label">Mois affiché — PDF</span>
+      <button class="icon-action" id="export-pdf" title="Télécharger" aria-label="Télécharger le PDF du mois affiché">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
+      </button>
+      <button class="icon-action" id="share-pdf" title="Partager" aria-label="Partager le PDF du mois affiché">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.2M8.3 13.3l7.4 4.2"/></svg>
+      </button>
+    </div>
+    <p class="hint">Le bouton « Partager » ouvre le menu habituel du téléphone (WhatsApp, e-mail, Drive...) pour envoyer directement le fichier ; « Télécharger » l'enregistre sur l'appareil.</p>
 
     <h3>Données</h3>
     <button class="action-btn danger" id="reset-data">

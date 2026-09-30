@@ -388,28 +388,69 @@ function buildCsv(monthsKeys){
 }
 function downloadCsv(filename, content){
   const blob = new Blob(['\ufeff' + content], {type:'text/csv;charset=utf-8;'});
+  downloadBlob(filename, blob);
+}
+function downloadBlob(filename, blob){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+/* ---- partage natif (WhatsApp, e-mail, etc.) avec repli sur le téléchargement ---- */
+async function shareOrDownload(filename, blob, mime, shareText){
+  if(navigator.share && navigator.canShare){
+    try{
+      const file = new File([blob], filename, { type: mime });
+      if(navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: "Mon compt'heures", text: shareText });
+        return;
+      }
+    }catch(err){
+      if(err && err.name === 'AbortError') return; // l'utilisateur a annulé le partage
+      // sinon on continue vers le repli téléchargement ci-dessous
+    }
+  }
+  downloadBlob(filename, blob);
+  showToast('Partage non disponible ici — fichier téléchargé à la place.');
+}
+
 $('#export-month').addEventListener('click', () => {
   const key = monthKey(state.year, state.month);
   if(!data[key]){ showToast('Aucune donnée à exporter pour ce mois.'); return; }
   downloadCsv(`compt-heures_${key}.csv`, buildCsv([key]));
   showToast('Export du mois effectué.');
 });
+$('#share-month-csv').addEventListener('click', () => {
+  const key = monthKey(state.year, state.month);
+  if(!data[key]){ showToast('Aucune donnée à exporter pour ce mois.'); return; }
+  const content = buildCsv([key]);
+  const blob = new Blob(['\ufeff' + content], {type:'text/csv;charset=utf-8;'});
+  shareOrDownload(`compt-heures_${key}.csv`, blob, 'text/csv', `Mes heures — ${MOIS[state.month]} ${state.year}`);
+});
+
+$('#export-all').addEventListener('click', () => {
+  const keys = Object.keys(data);
+  if(keys.length === 0){ showToast('Aucune donnée enregistrée.'); return; }
+  downloadCsv('compt-heures_complet.csv', buildCsv(keys));
+  showToast('Export complet effectué.');
+});
+$('#share-all-csv').addEventListener('click', () => {
+  const keys = Object.keys(data);
+  if(keys.length === 0){ showToast('Aucune donnée enregistrée.'); return; }
+  const content = buildCsv(keys);
+  const blob = new Blob(['\ufeff' + content], {type:'text/csv;charset=utf-8;'});
+  shareOrDownload('compt-heures_complet.csv', blob, 'text/csv', "Mon compt'heures — export complet");
+});
+
 /* ------------------------------ export PDF ------------------------------ */
-$('#export-pdf').addEventListener('click', () => {
+function buildMonthPdfDoc(){
   const key = monthKey(state.year, state.month);
   const monthData = data[key] || {};
   const nbJours = daysInMonth(state.year, state.month);
-  if(Object.keys(monthData).length === 0){ showToast('Aucune donnée à exporter pour ce mois.'); return; }
-  if(!window.jspdf || !window.jspdf.jsPDF){
-    showToast("L'export PDF nécessite une connexion internet (chargement du module la première fois).");
-    return;
-  }
+  if(Object.keys(monthData).length === 0) return { error: 'empty' };
+  if(!window.jspdf || !window.jspdf.jsPDF) return { error: 'no-lib' };
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -457,15 +498,24 @@ $('#export-pdf').addEventListener('click', () => {
   doc.text(`Total du mois : ${formatTotal(total)}`, 14, finalY + 10);
   doc.setFont(undefined, 'normal');
 
-  doc.save(`compt-heures_${key}.pdf`);
+  return { doc, filename: `compt-heures_${key}.pdf` };
+}
+function pdfErrorToast(errCode){
+  if(errCode === 'empty') showToast('Aucune donnée à exporter pour ce mois.');
+  else showToast("L'export PDF nécessite une connexion internet (chargement du module la première fois).");
+}
+
+$('#export-pdf').addEventListener('click', () => {
+  const result = buildMonthPdfDoc();
+  if(result.error){ pdfErrorToast(result.error); return; }
+  result.doc.save(result.filename);
   showToast('PDF généré.');
 });
-
-$('#export-all').addEventListener('click', () => {
-  const keys = Object.keys(data);
-  if(keys.length === 0){ showToast('Aucune donnée enregistrée.'); return; }
-  downloadCsv('compt-heures_complet.csv', buildCsv(keys));
-  showToast('Export complet effectué.');
+$('#share-pdf').addEventListener('click', () => {
+  const result = buildMonthPdfDoc();
+  if(result.error){ pdfErrorToast(result.error); return; }
+  const blob = result.doc.output('blob');
+  shareOrDownload(result.filename, blob, 'application/pdf', `Mes heures — ${MOIS[state.month]} ${state.year}`);
 });
 
 /* ------------------------------ import CSV ------------------------------ */
